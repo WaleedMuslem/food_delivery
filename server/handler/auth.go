@@ -33,6 +33,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
 	user, err := h.repo.GetUserByEmail(req.Email)
 	if err != nil {

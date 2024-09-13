@@ -31,7 +31,7 @@ func FetchMenu(supplier_id int) ([]model.Menu, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %v", err)
+		return nil, fmt.Errorf("error . response body: %v", err)
 	}
 
 	var menu []model.Menu

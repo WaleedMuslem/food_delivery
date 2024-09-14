@@ -37,7 +37,9 @@ func StartServer(cfg *config.Config) {
 
 	go apiIntegration.UpdatingPrice(db)
 
-	mux.Handle("GET /suppliers", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(supplierHandler.GetAll), tokenService))
+	// mux.Handle("GET /suppliers", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(supplierHandler.GetAll), tokenService))
+
+	mux.HandleFunc("GET /suppliers", supplierHandler.GetAll)
 
 	mux.HandleFunc("POST /supplier", supplierHandler.Create)
 	mux.HandleFunc("GET /supplier/{id}", supplierHandler.GetbyId)

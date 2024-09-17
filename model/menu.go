@@ -1,7 +1,8 @@
 package model
 
 type Menu struct {
-	ID          int      `json:"id"`
+	ID          int
+	ExtID       int      `json:"id"`
 	Name        string   `json:"name"`
 	Price       float64  `json:"price"`
 	SupplierID  int      `json:"supplier_id"`

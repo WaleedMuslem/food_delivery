@@ -1,7 +1,8 @@
 package model
 
 type Supplier struct {
-	ID           int          `json:"id"`
+	ID           int
+	ExtID        int          `json:"id"`
 	Name         string       `json:"name"`
 	Type         string       `json:"type"`
 	Image        string       `json:"image"`

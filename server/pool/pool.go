@@ -2,7 +2,6 @@ package pool
 
 import (
 	"fmt"
-	"food_delivery/model"
 	"sync"
 )
 
@@ -13,19 +12,17 @@ const (
 
 type WorkerPool struct {
 	wg          sync.WaitGroup
-	queue       chan func() ([]model.Menu, error)
+	queue       chan func() error
 	stop        chan struct{}
-	resultCh    chan any
 	errorCh     chan error
 	brokerCount int
 }
 
-func NewWorkerPool(resCh chan any, errCh chan error) *WorkerPool {
+func NewWorkerPool(errCh chan error) *WorkerPool {
 	return &WorkerPool{
-		queue:       make(chan func() ([]model.Menu, error), defaultBufferSize),
+		queue:       make(chan func() error, defaultBufferSize),
 		stop:        make(chan struct{}),
 		brokerCount: defaultListenersCount,
-		resultCh:    resCh,
 		errorCh:     errCh,
 	}
 }
@@ -35,7 +32,7 @@ func (s *WorkerPool) WithBrokerCount(cnt int) *WorkerPool {
 	return s
 }
 
-func (s *WorkerPool) Append(job func() ([]model.Menu, error)) {
+func (s *WorkerPool) Append(job func() error) {
 	s.wg.Add(1)
 	s.queue <- job
 }
@@ -58,13 +55,9 @@ func (s *WorkerPool) listen() {
 	for {
 		select {
 		case job := <-s.queue:
-			res, err := job()
-			switch err {
-			case nil:
-				s.resultCh <- res
-			default:
-				s.errorCh <- err
-			}
+			err := job()
+			s.errorCh <- err
+
 			s.wg.Done()
 		case <-s.stop:
 			fmt.Println("stop listener")

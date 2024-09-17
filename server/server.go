@@ -35,6 +35,11 @@ func StartServer(cfg *config.Config) {
 
 	mux := http.NewServeMux()
 
+	// err = apiIntegration.InsertSuppliers(db)
+	// if err != nil {
+	// 	log.Fatal(err)
+
+	// }
 	go apiIntegration.UpdatingPrice(db)
 
 	// mux.Handle("GET /suppliers", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(supplierHandler.GetAll), tokenService))

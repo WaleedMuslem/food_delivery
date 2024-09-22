@@ -32,37 +32,44 @@ func (sr SupplierRepository) Create(supplier model.Supplier) error {
 }
 
 func (sr SupplierRepository) GetAll() ([]model.Supplier, error) {
-
-	// fetchedSuppliers, err := service.FetchAllSuppliers()
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return nil, err
-	// }
-
-	// // fmt.Println(fetchedSuppliers)
-	// for _, supplier := range fetchedSuppliers {
-	// 	sr.Create(supplier)
-	// }
-
 	suppliers := []model.Supplier{}
 
-	result, err := sr.Db.Query("SELECT id, name, type, image, opening, closing FROM suppliers ORDER BY id DESC")
+	// Updated query to join with the type table
+	result, err := sr.Db.Query(`
+		SELECT s.id, s.name, s.image, s.opening, s.closing, s.ext_id, s.type_id, t.type 
+		FROM suppliers s 
+		JOIN supplier_type t ON s.type_id = t.id 
+		ORDER BY s.id DESC
+	`)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
+	defer result.Close()
 
 	for result.Next() {
 		supplier := model.Supplier{}
+		supplierType := model.Type{} // Assuming there's a Type struct in model
 
-		err := result.Scan(&supplier.ID, &supplier.Name, &supplier.Type, &supplier.Image, &supplier.WorkingHours.Opening, &supplier.WorkingHours.Closing)
+		// Scanning both supplier and type data
+		err := result.Scan(
+			&supplier.ID,
+			&supplier.Name,
+			&supplier.Image,
+			&supplier.WorkingHours.Opening,
+			&supplier.WorkingHours.Closing,
+			&supplier.ExtID,
+			&supplierType.ID,   // Scanning type_id into Type struct's ID
+			&supplierType.Type, // Scanning the type field
+		)
 		if err != nil {
 			return nil, err
 		}
 
+		// Assign the scanned type to the supplier's Type field
+		supplier.Type = supplierType
+
 		suppliers = append(suppliers, supplier)
 	}
-
-	result.Close()
 
 	return suppliers, nil
 }

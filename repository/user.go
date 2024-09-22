@@ -61,7 +61,7 @@ func (ur *UserRepository) RegisterUser(req *request.RegisterRequest) error {
 		return fmt.Errorf("error checking username: %v", err)
 	}
 	if existingUser.Email != "" {
-		return errors.New("username already taken")
+		return errors.New("user already exists")
 	}
 
 	// Hash the password

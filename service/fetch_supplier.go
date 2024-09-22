@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func fetchSuppliers(page, limit int) ([]model.Supplier, error) {
+func fetchSuppliers(page, limit int) ([]model.SupplierFromAPI, error) {
 	// url := "https://foodapi.golang.nixdev.co/suppliers?limit=10&page=1"
 	url := fmt.Sprintf("http://foodapi.golang.nixdev.co/suppliers?limit=%d&page=%d", limit, page)
 
@@ -31,7 +31,7 @@ func fetchSuppliers(page, limit int) ([]model.Supplier, error) {
 		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
 
-	var suppliers []model.Supplier
+	var suppliers []model.SupplierFromAPI
 	var response model.Response
 
 	err = json.Unmarshal(body, &response)
@@ -44,8 +44,8 @@ func fetchSuppliers(page, limit int) ([]model.Supplier, error) {
 	return suppliers, nil
 }
 
-func FetchAllSuppliers() ([]model.Supplier, error) {
-	var allSuppliers []model.Supplier
+func FetchAllSuppliers() ([]model.SupplierFromAPI, error) {
+	var allSuppliers []model.SupplierFromAPI
 	limit := 10
 	page := 1
 

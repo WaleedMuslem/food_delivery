@@ -108,12 +108,6 @@ func (s TokenService) ValidateRefreshToken(tokenString string) (*JwtCustomClaims
 		return nil, errors.New("falid to parse token claims")
 	}
 
-	// if s.isTokenVaild(tokenString) {
-	// 	return nil, err
-	// }
-
-	// log.Print(claims)
-
 	return claims, nil
 }
 

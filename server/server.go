@@ -33,6 +33,9 @@ func StartServer(cfg *config.Config) {
 	menuRepo := repository.NewMenuRepository(db)
 	menuHandler := handler.MenuHandler{Repo: &menuRepo}
 
+	categoryRepo := repository.NewCategoryRepository(db)
+	categoryHandler := handler.NewcategoryController(categoryRepo)
+
 	mux := http.NewServeMux()
 
 	// err = apiIntegration.InsertSuppliers(db)
@@ -50,6 +53,8 @@ func StartServer(cfg *config.Config) {
 	mux.HandleFunc("GET /supplier/{id}", supplierHandler.GetbyId)
 	mux.HandleFunc("GET /supplier/{id}/menu", menuHandler.GetAll)
 
+	mux.HandleFunc("GET /categories", categoryHandler.GetAll)
+
 	mux.HandleFunc("POST /refresh", userHandler.ValidRefreshToken)
 
 	mux.HandleFunc("POST /login", userHandler.Login)
@@ -57,7 +62,7 @@ func StartServer(cfg *config.Config) {
 	mux.Handle("GET /logout", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(userHandler.Logout), tokenService))
 
 	srv := &http.Server{
-		Handler: mux,
+		Handler: middlware.CORSMiddleware(mux),
 		Addr:    cfg.Port,
 	}
 

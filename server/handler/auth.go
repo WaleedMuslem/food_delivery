@@ -58,9 +58,19 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set the HTTP-only cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshString,
+		Path:     "/",
+		HttpOnly: true,
+		// Secure:   true, // Use HTTPS in production
+		Expires: time.Now().Add(24 * time.Hour), // Adjust expiration as needed
+	})
+
 	resp := respond.LoginRespond{
-		AccessToken:  accessString,
-		RefreshToken: refreshString,
+		AccessToken: accessString,
+		// RefreshToken: refreshString,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -86,9 +96,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandler) ValidRefreshToken(w http.ResponseWriter, r *http.Request) {
 
-	claims, err := h.tokenService.ValidateRefreshToken(service.GetTokenFromBearerString(
-		r.Header.Get("Authorization")),
-	)
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil || cookie == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	claims, err := h.tokenService.ValidateRefreshToken(cookie.Value)
 
 	if err != nil {
 		http.Error(w, "invalid claims.credentials", http.StatusUnauthorized)
@@ -112,9 +125,18 @@ func (h *AuthHandler) ValidRefreshToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Set the HTTP-only cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshString,
+		Path:     "/",
+		HttpOnly: true,
+		// Secure:   true, // Use HTTPS in production
+		Expires: time.Now().Add(24 * time.Hour), // Adjust expiration as needed
+	})
+
 	resp := respond.LoginRespond{
-		AccessToken:  accessString,
-		RefreshToken: refreshString,
+		AccessToken: accessString,
 	}
 
 	w.WriteHeader(http.StatusOK)

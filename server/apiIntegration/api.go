@@ -6,6 +6,7 @@ import (
 	"food_delivery/model"
 	"food_delivery/server/pool"
 	"food_delivery/service"
+	"net/http"
 	"sync"
 	"time"
 )
@@ -92,7 +93,16 @@ func UpdatingPrice(db *sql.DB) {
 
 // }
 
-func CreateSuppliers(suppliers []model.Supplier, db *sql.DB) error {
+var defaultImagesByType = map[string]string{
+	"restaurant":  "https://images.pexels.com/photos/67468/pexels-photo-67468.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+	"bar":         "https://images.pexels.com/photos/941864/pexels-photo-941864.jpeg",
+	"supermarket": "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+	"coffee_shop": "https://images.pexels.com/photos/28543481/pexels-photo-28543481/free-photo-of-cozy-london-cafe-with-coffee-in-blue-cup.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+	"shop":        "https://images.pexels.com/photos/135620/pexels-photo-135620.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+	"Other":       "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1", // Default for any other type
+}
+
+func CreateSuppliers(suppliers []model.SupplierFromAPI, db *sql.DB) error {
 	var finalErr error
 
 	// 	query := `
@@ -115,22 +125,57 @@ func CreateSuppliers(suppliers []model.Supplier, db *sql.DB) error {
 	// INSERT INTO suppliers (name, image, opening, closing, ext_id ,type_id)
 	// VALUES ($2, $3, $4, $5, $6, COALESCE((SELECT id FROM supplier_types WHERE type = $1), (SELECT id FROM ins WHERE type = $1)) ON CONFLICT (ext_id) DO NOTHING;`
 
+	// Default images for different supplier types
+
 	for _, supplier := range suppliers {
+
+		if !isValidImage2(supplier.Image) {
+			// Use a type-based placeholder image
+			switch supplier.Type {
+			case "restaurant":
+				supplier.Image = defaultImagesByType["restaurant"]
+			case "bar":
+				supplier.Image = defaultImagesByType["bar"]
+			case "supermarket":
+				supplier.Image = defaultImagesByType["supermarket"]
+			case "coffee_shop":
+				supplier.Image = defaultImagesByType["coffee_shop"]
+			case "shop":
+				supplier.Image = defaultImagesByType["shop"]
+			default:
+				supplier.Image = defaultImagesByType["Other"]
+
+			}
+
+			// if placeholder, exists := defaultImagesByType[supplier.Type]; exists {
+
+			// 	supplier.Image = placeholder
+			// } else {
+			// 	// Use "Other" placeholder if type doesn't match any known types
+			// 	supplier.Image = defaultImagesByType["Other"]
+			// }
+		}
+
 		_, err := db.Exec(`
 		WITH ins AS (
-		INSERT INTO supplier_type (type)
-		VALUES ($1)
-		ON CONFLICT (type) DO NOTHING
-		RETURNING id
-	),
-	type_id AS (
-		SELECT id FROM supplier_type WHERE type = $1
-		UNION
-		SELECT id FROM ins
-	) 
-	INSERT INTO suppliers (name, image, opening, closing, ext_id, type_id)
-	VALUES ($2, $3, $4, $5, $6, (SELECT id FROM type_id))
-	ON CONFLICT (ext_id) DO NOTHING;`,
+			INSERT INTO supplier_type (type)
+			VALUES ($1)
+			ON CONFLICT (type) DO NOTHING
+			RETURNING id
+		),
+		type_id AS (
+			SELECT id FROM supplier_type WHERE type = $1
+			UNION
+			SELECT id FROM ins
+		) 
+		INSERT INTO suppliers (name, image, opening, closing, ext_id, type_id)
+		VALUES ($2, $3, $4, $5, $6, (SELECT id FROM type_id))
+		ON CONFLICT (ext_id) DO UPDATE
+		SET name = EXCLUDED.name,
+			image = EXCLUDED.image,
+			opening = EXCLUDED.opening,
+			closing = EXCLUDED.closing,
+			type_id = (SELECT id FROM type_id);`,
 			supplier.Type, supplier.Name, supplier.Image, supplier.WorkingHours.Opening, supplier.WorkingHours.Closing, supplier.ExtID,
 		)
 
@@ -142,9 +187,25 @@ func CreateSuppliers(suppliers []model.Supplier, db *sql.DB) error {
 	return finalErr
 }
 
-// func fetchingandupdateingWithWorker() {
+func isValidImage2(imageURL string) bool {
+	if imageURL == "" {
+		return false
+	}
 
-// }
+	// Send a HEAD request to check if the image URL exists and is accessible
+	resp, err := http.Head(imageURL)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return false
+	}
+
+	// Optional: Check for image content type (e.g., "image/png", "image/jpeg")
+	contentType := resp.Header.Get("Content-Type")
+	if contentType != "image/jpeg" && contentType != "image/png" && contentType != "image/gif" {
+		return false
+	}
+
+	return true
+}
 
 // func UpdatingPrice(db *sql.DB) {
 

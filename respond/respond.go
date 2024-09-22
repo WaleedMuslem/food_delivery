@@ -3,8 +3,8 @@ package respond
 import "food_delivery/model"
 
 type LoginRespond struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccessToken string `json:"access_token"`
+	// RefreshToken string `json:"refresh_token"`
 }
 
 type UserRespond struct {

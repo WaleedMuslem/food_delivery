@@ -17,3 +17,15 @@ type UserRespond struct {
 type MenuRespond struct {
 	Menu []model.Menu
 }
+
+type ItemRespond struct {
+	ID          int
+	ExtID       int      `json:"id"`
+	Name        string   `json:"name"`
+	Price       float64  `json:"price"`
+	SupplierID  int      `json:"supplier_id"`
+	Image       string   `json:"image"`
+	Type        string   `json:"type"`
+	SuppierName string   `json:"supplier_name"`
+	Ingredients []string `json:"ingredients"`
+}

@@ -47,13 +47,16 @@ func StartServer(cfg *config.Config) {
 
 	// mux.Handle("GET /suppliers", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(supplierHandler.GetAll), tokenService))
 
-	mux.HandleFunc("GET /suppliers", supplierHandler.GetAll)
+	// mux.HandleFunc("GET /suppliers", supplierHandler.GetAll)
+	mux.Handle("GET /suppliers", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(supplierHandler.GetAll), tokenService))
 
 	mux.HandleFunc("POST /supplier", supplierHandler.Create)
 	mux.HandleFunc("GET /supplier/{id}", supplierHandler.GetbyId)
 	mux.HandleFunc("GET /supplier/{id}/menu", menuHandler.GetAll)
+	mux.HandleFunc("GET /menu/category/{id}", menuHandler.GetMenubyCategory)
 
-	mux.HandleFunc("GET /categories", categoryHandler.GetAll)
+	// mux.HandleFunc("GET /categories", categoryHandler.GetAll)
+	mux.Handle("GET /categories", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(categoryHandler.GetAll), tokenService))
 
 	mux.HandleFunc("POST /refresh", userHandler.ValidRefreshToken)
 

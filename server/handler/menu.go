@@ -52,7 +52,7 @@ func (mh *MenuHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println(idString)
 	id, _ := strconv.Atoi(idString)
 
-	menus, err := mh.Repo.GetAll(id)
+	menus, err := mh.Repo.GetAllBySupplierId(id)
 	if err != nil {
 		fmt.Println(err)
 	}

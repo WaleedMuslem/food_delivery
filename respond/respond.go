@@ -29,3 +29,8 @@ type ItemRespond struct {
 	SuppierName string   `json:"supplier_name"`
 	Ingredients []string `json:"ingredients"`
 }
+
+type CartResponse struct {
+	Items       []model.CartItem `json:"items"`
+	TotalAmount float64          `json:"total_amount"`
+}

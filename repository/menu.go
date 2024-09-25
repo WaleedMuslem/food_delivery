@@ -30,27 +30,42 @@ func NewMenuRepository(db *sql.DB) MenuRepository {
 	return MenuRepository{Db: db}
 }
 
-func (mr MenuRepository) GetAll(supplier_id int) ([]model.Menu, error) {
+func (mr MenuRepository) GetAllBySupplierId(supplier_id int) ([]respond.ItemRespond, error) {
 
-	menus := []model.Menu{}
+	menus := []respond.ItemRespond{}
 
-	result, err := mr.Db.Query("SELECT id, name, price,supplier_id, image, category_id FROM products WHERE supplier_id = $1", supplier_id)
+	query := `
+        SELECT p.id, p.name, p.price, p.supplier_id, s.name, p.image, c.category_name, 
+               array_agg(i.ingredient) as ingredients
+        FROM products p
+        JOIN category c ON p.category_id = c.category_id
+        JOIN suppliers s ON p.supplier_id = s.ext_id  -- Join with suppliers table
+        LEFT JOIN product_ingredient pi ON p.id = pi.product_id
+        LEFT JOIN ingredients i ON pi.ingredient_id = i.id
+        WHERE s.ext_id = $1
+        GROUP BY p.id, s.name, c.category_name  -- Include supplier_name in GROUP BY
+    `
+
+	result, err := mr.Db.Query(query, supplier_id)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
+	defer result.Close()
 
 	for result.Next() {
-		menu := model.Menu{}
+		menu := respond.ItemRespond{}
+		var ingredients pq.StringArray
 
-		err := result.Scan(&menu.ID, &menu.Name, &menu.Price, &menu.SupplierID, &menu.Image, &menu.Type)
+		err := result.Scan(&menu.ID, &menu.Name, &menu.Price, &menu.SupplierID, &menu.SuppierName, &menu.Image, &menu.Type, &ingredients)
 		if err != nil {
 			return nil, err
 		}
 
+		// Assign the array of ingredients to the menu struct
+		menu.Ingredients = ingredients
+
 		menus = append(menus, menu)
 	}
-
-	result.Close()
 
 	return menus, nil
 }

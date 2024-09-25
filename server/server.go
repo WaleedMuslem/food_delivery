@@ -36,6 +36,9 @@ func StartServer(cfg *config.Config) {
 	categoryRepo := repository.NewCategoryRepository(db)
 	categoryHandler := handler.NewcategoryController(categoryRepo)
 
+	cartRepo := repository.NewCartRepository(db)
+	cartHandler := handler.NewCartController(cartRepo)
+
 	mux := http.NewServeMux()
 
 	// err = apiIntegration.InsertSuppliers(db)
@@ -63,6 +66,13 @@ func StartServer(cfg *config.Config) {
 	mux.HandleFunc("POST /login", userHandler.Login)
 	mux.HandleFunc("POST /register", userHandler.Register)
 	mux.Handle("GET /logout", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(userHandler.Logout), tokenService))
+
+	mux.Handle("GET /cart/createCart", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.Create), tokenService))
+	mux.Handle("GET /cart/additem", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.AddItemToCart), tokenService))
+	mux.Handle("GET /cart/updateCartItem", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.UpdateCartItem), tokenService))
+	mux.Handle("POST /cart/removeItem", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.RemoveItemFromCart), tokenService))
+	mux.Handle("GET /cart/getCart", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.GetCart), tokenService))
+	mux.Handle("GET /cart/checkout", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.CheckoutCart), tokenService))
 
 	srv := &http.Server{
 		Handler: middlware.CORSMiddleware(mux),

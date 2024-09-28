@@ -15,14 +15,16 @@ import (
 )
 
 type AuthHandler struct {
-	repo         repository.UserRepository
+	authRepo     repository.UserRepository
+	cartRepo     repository.CartRepository
 	tokenService *service.TokenService
 }
 
-func NewAuthHandler(tokenService *service.TokenService, repo repository.UserRepository) *AuthHandler {
+func NewAuthHandler(tokenService *service.TokenService, authRepo repository.UserRepository, cartRepo repository.CartRepository) *AuthHandler {
 	return &AuthHandler{
 		tokenService: tokenService,
-		repo:         repo,
+		authRepo:     authRepo,
+		cartRepo:     cartRepo,
 	}
 }
 
@@ -35,7 +37,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	user, err := h.repo.GetUserByEmail(req.Email)
+	user, err := h.authRepo.GetUserByEmail(req.Email)
 	if err != nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -68,8 +70,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Expires: time.Now().Add(24 * time.Hour), // Adjust expiration as needed
 	})
 
+	cartId, err := h.cartRepo.CreateCart(user.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	resp := respond.LoginRespond{
 		AccessToken: accessString,
+		CartId:      cartId,
 		// RefreshToken: refreshString,
 	}
 
@@ -85,7 +93,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.repo.RegisterUser(req)
+	err := h.authRepo.RegisterUser(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
@@ -156,7 +164,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// fmt.Println("from logout handler")
-	err := h.repo.Logout(claims.ID)
+	err := h.authRepo.Logout(claims.ID)
 	if err != nil {
 		http.Error(w, "faild to invalidate the tokens", http.StatusInternalServerError)
 

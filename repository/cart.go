@@ -21,19 +21,41 @@ func NewCartRepository(db *sql.DB) CartRepository {
 
 func (cr CartRepository) CreateCart(userID uint) (int, error) {
 	var cartID int
-	err := cr.Db.QueryRow(`INSERT INTO carts (user_id) 
+
+	// Check if the user already has an unordered cart
+	err := cr.Db.QueryRow(`SELECT cart_id FROM carts WHERE user_id = $1 AND is_ordered = false`, userID).Scan(&cartID)
+	if err == nil {
+		// If the cart exists, return the cart ID
+		return cartID, nil
+	}
+
+	// If no unordered cart exists, create a new one
+	err = cr.Db.QueryRow(`INSERT INTO carts (user_id) 
                         VALUES ($1) RETURNING cart_id`, userID).Scan(&cartID)
 	if err != nil {
 		return 0, err
 	}
+
+	// Return the new cart ID
 	return cartID, nil
 }
+
+// func (cr CartRepository) CreateCart(userID uint) error {
+
+// 	err := cr.Db.QueryRow(`INSERT INTO carts (user_id)
+//                         VALUES ($1) RETURNING cart_id`, userID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+
+// }
 
 func (cr CartRepository) AddItemToCart(cartID int, productID int, quantity int, price float64) error {
 	_, err := cr.Db.Exec(`INSERT INTO cart_product (cart_id, product_id, quantity, price) 
                        VALUES ($1, $2, $3, $4) 
                        ON CONFLICT (cart_id, product_id) 
-                       DO UPDATE SET quantity = cart_product.quantity + $3`,
+                       DO UPDATE SET quantity = $3`,
 		cartID, productID, quantity, price)
 	return err
 }
@@ -89,10 +111,10 @@ func (cr CartRepository) GetCart(userID uint) (model.Cart, error) {
 	return cart, nil
 }
 
-func (cr CartRepository) CheckoutCart(cartID int, userID uint) error {
+func (cr CartRepository) CheckoutCart(cartID int, userID uint) (int, error) {
 	tx, err := cr.Db.Begin() // Start a transaction
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// Insert into orders
@@ -101,23 +123,61 @@ func (cr CartRepository) CheckoutCart(cartID int, userID uint) error {
                       WHERE cart_id = $1 GROUP BY cart_id`, cartID, userID)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return 0, err
+	}
+
+	// Get the order_id of the newly created order
+	var orderID int
+	err = tx.QueryRow(`SELECT order_id FROM orders WHERE cart_id = $1`, cartID).Scan(&orderID)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	// Insert cart products into order_product
+	_, err = tx.Exec(`INSERT INTO order_product (order_id, product_id, quantity, price) 
+                      SELECT $1, product_id, quantity, price FROM cart_product 
+                      WHERE cart_id = $2`, orderID, cartID)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
 	}
 
 	// Mark the cart as ordered
 	_, err = tx.Exec(`UPDATE carts SET is_ordered = TRUE WHERE cart_id = $1`, cartID)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return 0, err
+	}
+	_, err = tx.Exec(`DELETE FROM cart_product
+						WHERE cart_id = $1;
+						`, cartID)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
 	}
 
-	return tx.Commit() // Commit the transaction
+	var newCartId int
+	// Insert new cart and return the new cart_id
+	err = tx.QueryRow(`INSERT INTO carts (user_id) 
+                      VALUES ($1) RETURNING cart_id`, userID).Scan(&newCartId)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	// cartId, err := cr.CreateCart(userID)
+	// if err != nil {
+	// 	return 0, err
+	// }
+
+	return newCartId, tx.Commit() // Commit the transaction
 }
 
-func (cr CartRepository) RemoveProductFromCart(productId int, cartId int) error {
+// func (cr CartRepository) RemoveProductFromCart(productId int, cartId int) error {
 
-	_, err := cr.Db.Exec(`DELETE FROM cart_items WHERE cart_id = $1 AND product_id = $2`, cartId, productId)
+// 	_, err := cr.Db.Exec(`DELETE FROM cart_items WHERE cart_id = $1 AND product_id = $2`, cartId, productId)
 
-	return err
+// 	return err
 
-}
+// }

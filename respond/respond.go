@@ -4,6 +4,7 @@ import "food_delivery/model"
 
 type LoginRespond struct {
 	AccessToken string `json:"access_token"`
+	CartId      int    `json:"cart_id"`
 	// RefreshToken string `json:"refresh_token"`
 }
 
@@ -28,6 +29,7 @@ type ItemRespond struct {
 	Type        string   `json:"type"`
 	SuppierName string   `json:"supplier_name"`
 	Ingredients []string `json:"ingredients"`
+	Quantity    int      `json:"quantity"`
 }
 
 type CartResponse struct {

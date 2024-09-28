@@ -209,44 +209,50 @@ func (ch *CartHandler) CheckoutCart(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = ch.Repo.CheckoutCart(cartItem.CartId, claims.ID)
+	cartId, err := ch.Repo.CheckoutCart(cartItem.CartId, claims.ID)
 	if err != nil {
 		panic(err)
+	}
+
+	jsonData, err := json.Marshal(cartId)
+	if err != nil {
+		fmt.Println("Failed to marshal JSON ")
 	}
 
 	w.WriteHeader(200)
+	w.Write(jsonData)
 }
 
-func (ch *CartHandler) RemoveCartItem(w http.ResponseWriter, r *http.Request) {
-	// Get user ID and product ID from request (e.g., path params)
-	// claims, ok := r.Context().Value(middlware.ClaimsKey).(*service.JwtCustomClaims)
-	// if !ok {
-	// 	// Handle the case where the type assertion fails
-	// 	log.Print("Failed to retrieve JWT claims from context")
-	// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	// 	return
-	// }
+// func (ch *CartHandler) RemoveCartItem(w http.ResponseWriter, r *http.Request) {
+// 	// Get user ID and product ID from request (e.g., path params)
+// 	// claims, ok := r.Context().Value(middlware.ClaimsKey).(*service.JwtCustomClaims)
+// 	// if !ok {
+// 	// 	// Handle the case where the type assertion fails
+// 	// 	log.Print("Failed to retrieve JWT claims from context")
+// 	// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+// 	// 	return
+// 	// }
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
-		return
-	}
-	defer r.Body.Close()
+// 	body, err := io.ReadAll(r.Body)
+// 	if err != nil {
+// 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	defer r.Body.Close()
 
-	var cartItem model.CartItem
+// 	var cartItem model.CartItem
 
-	err = json.Unmarshal(body, &cartItem)
-	if err != nil {
-		panic(err)
-	}
+// 	err = json.Unmarshal(body, &cartItem)
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	// Remove the product from the cart in the database
-	err = ch.Repo.RemoveProductFromCart(cartItem.ProductID, cartItem.CartId)
-	if err != nil {
-		http.Error(w, "Error removing product from cart", http.StatusInternalServerError)
-		return
-	}
+// 	// Remove the product from the cart in the database
+// 	err = ch.Repo.RemoveProductFromCart(cartItem.ProductID, cartItem.CartId)
+// 	if err != nil {
+// 		http.Error(w, "Error removing product from cart", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.WriteHeader(http.StatusOK)
-}
+// 	w.WriteHeader(http.StatusOK)
+// }

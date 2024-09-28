@@ -34,19 +34,47 @@ func (mr MenuRepository) GetAllBySupplierId(supplier_id int) ([]respond.ItemResp
 
 	menus := []respond.ItemRespond{}
 
-	query := `
+	// query := `
+	//     SELECT p.id, p.name, p.price, p.supplier_id, s.name, p.image, c.category_name,
+	//            array_agg(i.ingredient) as ingredients
+	//     FROM products p
+	//     JOIN category c ON p.category_id = c.category_id
+	//     JOIN suppliers s ON p.supplier_id = s.ext_id  -- Join with suppliers table
+	//     LEFT JOIN product_ingredient pi ON p.id = pi.product_id
+	//     LEFT JOIN ingredients i ON pi.ingredient_id = i.id
+	//     WHERE s.ext_id = $1
+	//     GROUP BY p.id, s.name, c.category_name  -- Include supplier_name in GROUP BY
+	// `
+	// query1 := `
+	//     SELECT p.id, p.name, p.price, p.supplier_id, s.name, p.image, c.category_name,
+	//            array_agg(i.ingredient) as ingredients,
+	//            COALESCE(cp.quantity, 0) as quantity  -- Fetch quantity from cart_product
+	//     FROM products p
+	//     JOIN category c ON p.category_id = c.category_id
+	//     JOIN suppliers s ON p.supplier_id = s.ext_id  -- Join with suppliers table
+	//     LEFT JOIN product_ingredient pi ON p.id = pi.product_id
+	//     LEFT JOIN ingredients i ON pi.ingredient_id = i.id
+	//     LEFT JOIN cart_product cp ON p.id = cp.product_id  -- Join with cart_product to get quantity
+	//     WHERE s.ext_id = $1
+	//     GROUP BY p.id,cp.quantity, s.name, c.category_name  -- Include supplier_name in GROUP BY
+	// `
+
+	query1 := `
         SELECT p.id, p.name, p.price, p.supplier_id, s.name, p.image, c.category_name, 
-               array_agg(i.ingredient) as ingredients
+               array_agg(i.ingredient) as ingredients,
+               COALESCE(cp.quantity, 0) as quantity  -- Fetch quantity from cart_product
         FROM products p
         JOIN category c ON p.category_id = c.category_id
         JOIN suppliers s ON p.supplier_id = s.ext_id  -- Join with suppliers table
         LEFT JOIN product_ingredient pi ON p.id = pi.product_id
         LEFT JOIN ingredients i ON pi.ingredient_id = i.id
+        LEFT JOIN cart_product cp ON p.id = cp.product_id  -- Join with cart_product to get quantity
         WHERE s.ext_id = $1
-        GROUP BY p.id, s.name, c.category_name  -- Include supplier_name in GROUP BY
+        GROUP BY p.id, cp.quantity, s.name, c.category_name  -- Include supplier_name in GROUP BY
+        ORDER BY p.name ASC  -- Order by product name (or other column)
     `
 
-	result, err := mr.Db.Query(query, supplier_id)
+	result, err := mr.Db.Query(query1, supplier_id)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +84,7 @@ func (mr MenuRepository) GetAllBySupplierId(supplier_id int) ([]respond.ItemResp
 		menu := respond.ItemRespond{}
 		var ingredients pq.StringArray
 
-		err := result.Scan(&menu.ID, &menu.Name, &menu.Price, &menu.SupplierID, &menu.SuppierName, &menu.Image, &menu.Type, &ingredients)
+		err := result.Scan(&menu.ID, &menu.Name, &menu.Price, &menu.SupplierID, &menu.SuppierName, &menu.Image, &menu.Type, &ingredients, &menu.Quantity)
 		if err != nil {
 			return nil, err
 		}
@@ -75,14 +103,16 @@ func (mr MenuRepository) GetMenuByCategory(category_id int) ([]respond.ItemRespo
 
 	query := `
         SELECT p.id, p.name, p.price, p.supplier_id, s.name, p.image, c.category_name, 
-               array_agg(i.ingredient) as ingredients
+               array_agg(i.ingredient) as ingredients,
+               COALESCE(cp.quantity, 0) as quantity  -- Fetch quantity from cart_product
         FROM products p
         JOIN category c ON p.category_id = c.category_id
         JOIN suppliers s ON p.supplier_id = s.ext_id  -- Join with suppliers table
         LEFT JOIN product_ingredient pi ON p.id = pi.product_id
         LEFT JOIN ingredients i ON pi.ingredient_id = i.id
+        LEFT JOIN cart_product cp ON p.id = cp.product_id  -- Join with cart_product to get quantity
         WHERE p.category_id = $1
-        GROUP BY p.id, s.name, c.category_name  -- Include supplier_name in GROUP BY
+        GROUP BY p.id,cp.quantity, s.name, c.category_name  -- Include supplier_name in GROUP BY
     `
 
 	result, err := mr.Db.Query(query, category_id)
@@ -95,7 +125,7 @@ func (mr MenuRepository) GetMenuByCategory(category_id int) ([]respond.ItemRespo
 		menu := respond.ItemRespond{}
 		var ingredients pq.StringArray
 
-		err := result.Scan(&menu.ID, &menu.Name, &menu.Price, &menu.SupplierID, &menu.SuppierName, &menu.Image, &menu.Type, &ingredients)
+		err := result.Scan(&menu.ID, &menu.Name, &menu.Price, &menu.SupplierID, &menu.SuppierName, &menu.Image, &menu.Type, &ingredients, &menu.Quantity)
 		if err != nil {
 			return nil, err
 		}

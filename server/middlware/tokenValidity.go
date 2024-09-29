@@ -13,7 +13,7 @@ const ClaimsKey contextKey = "claims"
 func AcessTokenValdityMiddleware(next http.Handler, tokenService *service.TokenService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		claims, err := tokenService.ValidateAccessToken(service.GetTokenFromBearerString(
+		claims, err := tokenService.ValidateAccessToken(tokenService.GetTokenFromBearerString(
 			r.Header.Get("Authorization")),
 		)
 		if err != nil {

@@ -13,11 +13,14 @@ import (
 )
 
 type CartHandler struct {
-	Repo *repository.CartRepository
+	Repo         repository.ICart
+	tokenService *service.TokenService
 }
 
-func NewCartController(repo repository.CartRepository) CartHandler {
-	return CartHandler{Repo: &repo}
+func NewCartController(tokenService *service.TokenService, repo repository.ICart) *CartHandler {
+	return &CartHandler{Repo: repo,
+		tokenService: tokenService,
+	}
 }
 
 func (ch *CartHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -147,14 +150,14 @@ func (ch *CartHandler) RemoveItemFromCart(w http.ResponseWriter, r *http.Request
 
 func (ch *CartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 
-	// // Type assertion to convert from `any` to `*service.JwtCustomClaims`
-	claims, ok := r.Context().Value(middlware.ClaimsKey).(*service.JwtCustomClaims)
-	if !ok {
-		// Handle the case where the type assertion fails
-		log.Print("Failed to retrieve JWT claims from context")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+	// // // Type assertion to convert from `any` to `*service.JwtCustomClaims`
+	// claims, ok := r.Context().Value(middlware.ClaimsKey).(*service.JwtCustomClaims)
+	// if !ok {
+	// 	// Handle the case where the type assertion fails
+	// 	log.Print("Failed to retrieve JWT claims from context")
+	// 	http.Error(w, "Unauthorized to test", http.StatusUnauthorized)
+	// 	return
+	// }
 
 	// body, err := io.ReadAll(r.Body)
 	// if err != nil {
@@ -169,6 +172,12 @@ func (ch *CartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	// if err != nil {
 	// 	panic(err)
 	// }
+
+	claims, err := ch.tokenService.ValidateAccessToken(ch.tokenService.GetTokenFromBearerString(r.Header.Get("Authorization")))
+	if err != nil {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
 
 	cart, err := ch.Repo.GetCart(claims.ID)
 	if err != nil {

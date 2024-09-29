@@ -22,15 +22,15 @@ func StartServer(cfg *config.Config) {
 		panic(err.Error())
 	}
 	defer db.Close()
+	tokenService := service.NewTokenService(cfg, db)
 
 	cartRepo := repository.NewCartRepository(db)
-	cartHandler := handler.NewCartController(cartRepo)
+	cartHandler := handler.NewCartController(tokenService, cartRepo)
 
 	supplierRepo := repository.NewSupplierRepository(db)
 	supplierHandler := handler.SupplierHandler{Repo: &supplierRepo}
 
 	userRepo := repository.NewUserRepository(db)
-	tokenService := service.NewTokenService(cfg, db)
 	userHandler := handler.NewAuthHandler(tokenService, userRepo, cartRepo)
 
 	menuRepo := repository.NewMenuRepository(db)
@@ -67,7 +67,9 @@ func StartServer(cfg *config.Config) {
 	// mux.HandleFunc("GET /categories", categoryHandler.GetAll)
 	mux.Handle("GET /categories", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(categoryHandler.GetAll), tokenService))
 
-	mux.HandleFunc("POST /refresh", userHandler.ValidRefreshToken)
+	mux.Handle("POST /refresh", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(userHandler.ValidRefreshToken), tokenService))
+
+	// mux.HandleFunc("POST /refresh", userHandler.ValidRefreshToken)
 
 	mux.HandleFunc("POST /login", userHandler.Login)
 	mux.HandleFunc("POST /register", userHandler.Register)
@@ -77,7 +79,8 @@ func StartServer(cfg *config.Config) {
 	mux.Handle("POST /cart/additem", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.AddItemToCart), tokenService))
 	mux.Handle("POST /cart/updateCartItem", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.UpdateCartItem), tokenService))
 	mux.Handle("POST /cart/removeItem", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.RemoveItemFromCart), tokenService))
-	mux.Handle("GET /cart/getCart", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.GetCart), tokenService))
+	mux.HandleFunc("GET /cart/getCart", cartHandler.GetCart)
+	// mux.Handle("GET /cart/getCart", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.GetCart), tokenService))
 	mux.Handle("POST /cart/checkout", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(cartHandler.CheckoutCart), tokenService))
 
 	mux.Handle("POST /address", middlware.AcessTokenValdityMiddleware(http.HandlerFunc(addressHandler.Create), tokenService))

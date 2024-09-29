@@ -37,17 +37,17 @@ func (s *TokenService) GenerateAccessToken(userId uint) (token string, err error
 
 	tokenStruct := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenString, _ := tokenStruct.SignedString([]byte(s.cfg.AccessSecret))
+	// 	tokenString, _ := tokenStruct.SignedString([]byte(s.cfg.AccessSecret))
 
-	// Store the token in the database
-	_, err = s.db.Exec(`
-	  INSERT INTO jwt_tokens (user_id, token_string, revoked) 
-	  VALUES ($1, $2, $3)
-  `, userId, tokenString, false)
+	// 	// Store the token in the database
+	// 	_, err = s.db.Exec(`
+	// 	  INSERT INTO jwt_tokens (user_id, token_string, revoked)
+	// 	  VALUES ($1, $2, $3)
+	//   `, userId, tokenString, false)
 
-	if err != nil {
-		return "", err
-	}
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
 
 	return tokenStruct.SignedString([]byte(s.cfg.AccessSecret))
 }
@@ -111,7 +111,7 @@ func (s TokenService) ValidateRefreshToken(tokenString string) (*JwtCustomClaims
 	return claims, nil
 }
 
-func GetTokenFromBearerString(bearerString string) string {
+func (s TokenService) GetTokenFromBearerString(bearerString string) string {
 	if bearerString == "" {
 		return ""
 	}

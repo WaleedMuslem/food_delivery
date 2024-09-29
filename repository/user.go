@@ -84,3 +84,17 @@ func (ur *UserRepository) Logout(userId uint) error {
 
 	return err
 }
+
+func (ur *UserRepository) StoreAcessToken(userId uint, tokenString string) error {
+	// Store the token in the database
+	_, err := ur.Db.Exec(`
+		INSERT INTO jwt_tokens (user_id, token_string, revoked) 
+		VALUES ($1, $2, $3)
+	`, userId, tokenString, false)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

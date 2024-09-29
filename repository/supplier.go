@@ -78,7 +78,7 @@ func (sr SupplierRepository) GetbyId(id int) (*model.Supplier, error) {
 
 	var supplierById model.Supplier
 	err := sr.Db.QueryRow("SELECT * FROM suppliers WHERE id = $1",
-		&id).Scan(&supplierById.ID, &supplierById.Name, &supplierById.Type, &supplierById.Image, &supplierById.WorkingHours.Opening, &supplierById.WorkingHours.Closing)
+		&id).Scan(&supplierById.ID, &supplierById.Name, &supplierById.Type, &supplierById.Image, &supplierById.WorkingHours.Opening, &supplierById.WorkingHours.Closing, &supplierById.ExtID)
 	if err != nil {
 		return nil, err
 	}

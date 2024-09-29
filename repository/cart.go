@@ -6,17 +6,20 @@ import (
 )
 
 type ICart interface {
-	CreateCart(userID int) (int, error)
+	CreateCart(userID uint) (int, error)
 	AddItemToCart(cartID int, productID int, quantity int, price float64) error
 	UpdateCartItem(cartID int, productID int, newQuantity int) error
+	RemoveItemFromCart(cartID int, productID int) error
+	GetCart(userID uint) (*model.Cart, error)
+	CheckoutCart(cartID int, userID uint) (int, error)
 }
 
 type CartRepository struct {
 	Db *sql.DB
 }
 
-func NewCartRepository(db *sql.DB) CartRepository {
-	return CartRepository{Db: db}
+func NewCartRepository(db *sql.DB) ICart {
+	return &CartRepository{Db: db}
 }
 
 func (cr CartRepository) CreateCart(userID uint) (int, error) {
@@ -71,11 +74,11 @@ func (cr CartRepository) RemoveItemFromCart(cartID int, productID int) error {
 	return err
 }
 
-func (cr CartRepository) GetCart(userID uint) (model.Cart, error) {
+func (cr CartRepository) GetCart(userID uint) (*model.Cart, error) {
 	var cart model.Cart
 	err := cr.Db.QueryRow(`SELECT cart_id FROM carts WHERE user_id = $1 AND is_ordered = FALSE`, userID).Scan(&cart.CartID)
 	if err != nil {
-		return model.Cart{}, err
+		return &model.Cart{}, err
 	}
 
 	rows, err := cr.Db.Query(`
@@ -96,7 +99,7 @@ func (cr CartRepository) GetCart(userID uint) (model.Cart, error) {
     WHERE 
         cp.cart_id = $1`, cart.CartID)
 	if err != nil {
-		return model.Cart{}, err
+		return &model.Cart{}, err
 	}
 	defer rows.Close()
 
@@ -104,11 +107,11 @@ func (cr CartRepository) GetCart(userID uint) (model.Cart, error) {
 		var item model.CartItem
 		err = rows.Scan(&item.CartId, &item.Name, &item.Image, &item.ProductID, &item.Quantity, &item.Price, &item.TotalPrice)
 		if err != nil {
-			return model.Cart{}, err
+			return &model.Cart{}, err
 		}
 		cart.Items = append(cart.Items, item)
 	}
-	return cart, nil
+	return &cart, nil
 }
 
 func (cr CartRepository) CheckoutCart(cartID int, userID uint) (int, error) {

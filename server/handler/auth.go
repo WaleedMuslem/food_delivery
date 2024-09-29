@@ -16,11 +16,11 @@ import (
 
 type AuthHandler struct {
 	authRepo     repository.UserRepository
-	cartRepo     repository.CartRepository
+	cartRepo     repository.ICart
 	tokenService *service.TokenService
 }
 
-func NewAuthHandler(tokenService *service.TokenService, authRepo repository.UserRepository, cartRepo repository.CartRepository) *AuthHandler {
+func NewAuthHandler(tokenService *service.TokenService, authRepo repository.UserRepository, cartRepo repository.ICart) *AuthHandler {
 	return &AuthHandler{
 		tokenService: tokenService,
 		authRepo:     authRepo,
@@ -53,6 +53,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	err = h.authRepo.StoreAcessToken(user.ID, accessString)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	refreshString, err := h.tokenService.GenerateRefreshToken(user.ID)
 	if err != nil {
@@ -66,8 +71,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    refreshString,
 		Path:     "/",
 		HttpOnly: true,
-		// Secure:   true, // Use HTTPS in production
-		Expires: time.Now().Add(24 * time.Hour), // Adjust expiration as needed
+		Secure:   true,                           // Use HTTPS in production
+		Expires:  time.Now().Add(24 * time.Hour), // Adjust expiration as needed
 	})
 
 	cartId, err := h.cartRepo.CreateCart(user.ID)
@@ -127,6 +132,12 @@ func (h *AuthHandler) ValidRefreshToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	err = h.authRepo.StoreAcessToken(claims.ID, accessString)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	refreshString, err := h.tokenService.GenerateRefreshToken(claims.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -139,8 +150,8 @@ func (h *AuthHandler) ValidRefreshToken(w http.ResponseWriter, r *http.Request) 
 		Value:    refreshString,
 		Path:     "/",
 		HttpOnly: true,
-		// Secure:   true, // Use HTTPS in production
-		Expires: time.Now().Add(24 * time.Hour), // Adjust expiration as needed
+		Secure:   true,                           // Use HTTPS in production
+		Expires:  time.Now().Add(24 * time.Hour), // Adjust expiration as needed
 	})
 
 	resp := respond.LoginRespond{

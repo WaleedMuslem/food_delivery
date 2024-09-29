@@ -1,0 +1,19 @@
+?   	food_delivery/cmd	[no test files]
+?   	food_delivery/config	[no test files]
+?   	food_delivery/model	[no test files]
+?   	food_delivery/repository	[no test files]
+?   	food_delivery/request	[no test files]
+?   	food_delivery/respond	[no test files]
+?   	food_delivery/server	[no test files]
+?   	food_delivery/server/apiIntegration	[no test files]
+?   	food_delivery/server/handler	[no test files]
+?   	food_delivery/server/middlware	[no test files]
+?   	food_delivery/server/pool	[no test files]
+goos: linux
+goarch: amd64
+pkg: food_delivery/service
+cpu: 13th Gen Intel(R) Core(TM) i5-1334U
+BenchmarkRegisterValidation-12    	20878759	        57.85 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	food_delivery/service	1.274s
+?   	food_delivery/test/util	[no test files]

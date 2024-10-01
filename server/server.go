@@ -16,6 +16,13 @@ import (
 
 func StartServer(cfg *config.Config) {
 
+	// dsn := "postgres://" + cfg.DbUsername + ":" + cfg.DbPassword + "@database/" + cfg.DbName + "?sslmode=disable"
+	// db, err := sql.Open("postgres", dsn)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+	// defer db.Close()
+
 	dsn := "postgres://" + cfg.DbUsername + ":" + cfg.DbPassword + "@localhost/" + cfg.DbName + "?sslmode=disable"
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {

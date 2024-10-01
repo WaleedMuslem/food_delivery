@@ -121,8 +121,8 @@ func (cr CartRepository) CheckoutCart(cartID int, userID uint) (int, error) {
 	}
 
 	// Insert into orders
-	_, err = tx.Exec(`INSERT INTO orders (user_id, cart_id, total_amount) 
-                      SELECT $2, cart_id, SUM(total_price) FROM cart_product 
+	_, err = tx.Exec(`INSERT INTO orders (user_id, cart_id, total_amount,created_at) 
+                      SELECT $2, cart_id, SUM(total_price),NOW()  FROM cart_product 
                       WHERE cart_id = $1 GROUP BY cart_id`, cartID, userID)
 	if err != nil {
 		tx.Rollback()
